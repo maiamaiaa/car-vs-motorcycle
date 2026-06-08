@@ -82,37 +82,48 @@ st.sidebar.markdown("---")
 # ============= MODEL LOADING & CACHING =============
 @st.cache_resource
 def load_models():
-    """Load all trained models (lazy-loads TensorFlow on demand)"""
+    """Load all trained models (Downloads from Google Drive if missing)"""
     models = {}
     model_paths = {
-        'CNN Baseline': 'cnn_baseline_best_model.h5',
-        'MobileNetV2': 'mobilenetv2_best_model.h5',
-        'ResNet50': 'resnet50_best_model.h5'
+        'CNN Baseline': 'cnn_baseline_best_model.h5'
+    }
+    
+    # KODE ID GOOGLE DRIVE MILIK EUGENIA
+    DRIVE_FILE_IDS = {
+        'CNN Baseline': '1ShkbPyQnoaSiAVs7eW3DkJNHw_x-iPto'
     }
     
     available_models = []
     missing_models = []
     
+    # Import gdown untuk mengunduh dari Google Drive secara otomatis
+    try:
+        import gdown
+    except ImportError:
+        os.system("pip install gdown")
+        import gdown
+
     for model_name, model_path in model_paths.items():
+        # Jika file .h5 belum ada di server Streamlit, unduh otomatis menggunakan gdown
+        if not os.path.exists(model_path) and model_name in DRIVE_FILE_IDS:
+            with st.spinner(f"Sedang mengunduh model {model_name} dari Google Drive... (Harap tunggu sebentar karena ukuran file cukup besar)"):
+                file_id = DRIVE_FILE_IDS[model_name]
+                url = f'https://drive.google.com/uc?id={file_id}'
+                gdown.download(url, model_path, quiet=False)
+
+        # Setelah proses unduh selesai, muat arsitekturnya ke memori
         if os.path.exists(model_path):
             try:
-                # Lazy-load TensorFlow only when a model file exists
-                try:
-                    import tensorflow as tf
-                except ImportError:
-                    missing_models.append((model_name, "TensorFlow not installed (requires local installation)"))
-                    continue
-                
-                # PERBAIKAN: Menambahkan compile=False untuk mencegah error "Unknown layer: Functional"
+                import tensorflow as tf
+                # Muat model dengan compile=False agar terhindar dari ValueError
                 models[model_name] = tf.keras.models.load_model(model_path, compile=False)
                 available_models.append(model_name)
             except Exception as e:
                 missing_models.append((model_name, str(e)))
         else:
-            missing_models.append((model_name, f"File not found ({model_path})"))
+            missing_models.append((model_name, f"Gagal mengunduh berkas dari Google Drive"))
     
     return models, available_models, missing_models
-
 # ============= MAIN APPLICATION =============
 def main():
     st.title("🚗🏍️ Car vs Motorcycle Classifier")
