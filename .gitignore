@@ -1,5 +1,5 @@
-# Trained model files (keeping best models for deployment)
-# *.h5 - Removing this so trained models are included
+# Trained model files (too large for GitHub - use local installation or Git LFS)
+*.h5
 *.pickle
 *.pkl
 *.pth

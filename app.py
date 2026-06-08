@@ -1,11 +1,12 @@
 import streamlit as st
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import numpy as np
 from PIL import Image
 import os
 import pickle
 import io
+
+# TensorFlow is lazy-loaded only when needed to avoid version conflicts
+# tensorflow commented out - will be imported dynamically when model is loaded
 
 # ============= PAGE CONFIGURATION =============
 st.set_page_config(
@@ -81,7 +82,7 @@ st.sidebar.markdown("---")
 # ============= MODEL LOADING & CACHING =============
 @st.cache_resource
 def load_models():
-    """Load all trained models"""
+    """Load all trained models (lazy-loads TensorFlow on demand)"""
     models = {}
     model_paths = {
         'CNN Baseline': 'cnn_baseline_best_model.h5',
@@ -95,6 +96,13 @@ def load_models():
     for model_name, model_path in model_paths.items():
         if os.path.exists(model_path):
             try:
+                # Lazy-load TensorFlow only when a model file exists
+                try:
+                    import tensorflow as tf
+                except ImportError:
+                    missing_models.append((model_name, "TensorFlow not installed (requires local installation)"))
+                    continue
+                
                 models[model_name] = tf.keras.models.load_model(model_path)
                 available_models.append(model_name)
             except Exception as e:
@@ -126,33 +134,40 @@ def main():
             st.success(f"✅ Available models: {', '.join(available_models)}")
         
         st.info("""
-        **To use this app locally:**
+        **🚀 To use this app locally:**
         
         1. Clone the repository:
            ```bash
            git clone https://github.com/maiamaiaa/car-vs-motorcycle.git
+           cd car-vs-motorcycle
            ```
         
-        2. Download the trained models from the notebook:
-           - Run `car-vs-motorcycle.ipynb` to train models
-           - Models will be saved as `.h5` files
+        2. Install dependencies (including TensorFlow):
+           ```bash
+           pip install -r requirements-dev.txt
+           # or for full setup:
+           pip install -r requirements.txt tensorflow==2.13.0
+           ```
         
-        3. Place model files in the project directory:
-           ```
-           cnn_baseline_best_model.h5
-           mobilenetv2_best_model.h5
-           resnet50_best_model.h5
-           ```
+        3. Train or obtain models:
+           - Run `jupyter notebook car-vs-motorcycle.ipynb` to train models
+           - Models save as `.h5` files automatically
         
         4. Run the Streamlit app:
            ```bash
            streamlit run app.py
            ```
         
-        **Or deploy statically:**
+        **☁️ Cloud Deployment Note:**
         
-        Upload your `.h5` files to GitHub Releases and configure the app to download them.
+        This version removes TensorFlow from requirements.txt to deploy on Streamlit Cloud.
+        The app will work without models but can use them when deployed locally.
+        
+        For cloud deployment with models, use:
+        - Git LFS to store large `.h5` files
+        - Or download models from cloud storage at startup
         """)
+
         
         return
     
@@ -196,6 +211,9 @@ def main():
         if uploaded_file is not None:
             # Prepare image for model
             try:
+                # Lazy-load TensorFlow utilities when needed
+                from tensorflow.keras.preprocessing.image import img_to_array
+                
                 # Convert and resize image
                 if image.mode != 'RGB':
                     image = image.convert('RGB')
