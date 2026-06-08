@@ -1,0 +1,59 @@
+# Model files (too large for GitHub)
+*.h5
+*.pickle
+*.pkl
+*.pth
+models/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data files (optional)
+dataset_raw/
+dataset_split/
+*.zip
+*.tar.gz
+
+# Kaggle
+.kaggle/
+
+# Environment variables
+.env
+.env.local
