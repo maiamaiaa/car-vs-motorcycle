@@ -103,12 +103,13 @@ def load_models():
                     missing_models.append((model_name, "TensorFlow not installed (requires local installation)"))
                     continue
                 
-                models[model_name] = tf.keras.models.load_model(model_path)
+                # PERBAIKAN: Menambahkan compile=False untuk mencegah error "Unknown layer: Functional"
+                models[model_name] = tf.keras.models.load_model(model_path, compile=False)
                 available_models.append(model_name)
             except Exception as e:
                 missing_models.append((model_name, str(e)))
         else:
-            missing_models.append((model_name, "File not found"))
+            missing_models.append((model_name, f"File not found ({model_path})"))
     
     return models, available_models, missing_models
 
@@ -125,58 +126,45 @@ def main():
     if missing_models:
         st.markdown("""
         <div class="error-box">
-        <h3>⚠️ Setup Required</h3>
-        <p>Some model files are missing or unavailable.</p>
+        <h3>⚠️ Setup Required / Missing Models</h3>
+        <p>Beberapa berkas model .h5 tidak ditemukan di direktori lokal atau gagal dimuat.</p>
         </div>
         """, unsafe_allow_html=True)
         
         if available_models:
-            st.success(f"✅ Available models: {', '.join(available_models)}")
+            st.success(f"✅ Model yang berhasil dimuat: {', '.join(available_models)}")
         
         st.info("""
-        **🚀 To use this app locally:**
+        **Untuk menjalankan aplikasi ini secara lokal atau cloud:**
         
-        1. Clone the repository:
-           ```bash
-           git clone https://github.com/maiamaiaa/car-vs-motorcycle.git
-           cd car-vs-motorcycle
+        1. Pastikan nama file model di folder proyek Anda cocok dengan definisi berikut:
+           - `cnn_baseline_best_model.h5`
+           - `mobilenetv2_best_model.h5`
+           - `resnet50_best_model.h5`
+        
+        2. Jika Anda memindahkan model dari output Kaggle, lakukan pengubahan nama file (*rename*) terlebih dahulu agar sesuai dengan daftar di atas.
+        
+        3. Struktur file direktori yang diharapkan:
            ```
-        
-        2. Install dependencies (including TensorFlow):
-           ```bash
-           pip install -r requirements-dev.txt
-           # or for full setup:
-           pip install -r requirements.txt tensorflow==2.13.0
+           deploy-folder/
+           ├── app.py
+           ├── cnn_baseline_best_model.h5
+           ├── mobilenetv2_best_model.h5
+           └── resnet50_best_model.h5
            ```
-        
-        3. Train or obtain models:
-           - Run `jupyter notebook car-vs-motorcycle.ipynb` to train models
-           - Models save as `.h5` files automatically
-        
-        4. Run the Streamlit app:
-           ```bash
-           streamlit run app.py
-           ```
-        
-        **☁️ Cloud Deployment Note:**
-        
-        This version removes TensorFlow from requirements.txt to deploy on Streamlit Cloud.
-        The app will work without models but can use them when deployed locally.
-        
-        For cloud deployment with models, use:
-        - Git LFS to store large `.h5` files
-        - Or download models from cloud storage at startup
         """)
-
         
-        return
+        # Jika setidaknya ada satu model yang berhasil dimuat, kita izinkan aplikasi tetap berjalan
+        if not available_models:
+            return
     
-    # All models available - show main interface
-    st.markdown("""
-    <div class="success-box">
-    <h3>✅ All Models Loaded Successfully!</h3>
-    </div>
-    """, unsafe_allow_html=True)
+    # Show success header if all models are present
+    if not missing_models:
+        st.markdown("""
+        <div class="success-box">
+        <h3>✅ All Models Loaded Successfully!</h3>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Two-column layout
     col1, col2 = st.columns([1, 1])
@@ -228,7 +216,8 @@ def main():
                 prediction = model.predict(image_array, verbose=0)
                 confidence = float(prediction[0][0])
                 
-                # Determine class
+                # Determine class based on 0.5 threshold
+                # (Kaggle class_indices: 0 untuk 'mobil', 1 untuk 'motor')
                 class_label = "🏍️ Motorcycle" if confidence > 0.5 else "🚗 Car"
                 confidence_pct = (confidence * 100) if confidence > 0.5 else ((1 - confidence) * 100)
                 
@@ -240,7 +229,7 @@ def main():
                 st.progress(confidence_pct / 100)
                 
                 # Additional metrics
-                st.metric("Raw Model Output", f"{confidence:.4f}")
+                st.metric("Raw Model Output (Sigmoid Prob)", f"{confidence:.4f}")
                 st.metric("Threshold", "0.5000")
                 
                 # Detailed explanation
@@ -267,9 +256,9 @@ def main():
     st.markdown("---")
     st.markdown("""
         <div style='text-align: center; color: gray; font-size: 0.8rem;'>
-        <p>📚 Project: Car vs Motorcycle Image Classification | 🎓 Deep Learning UAS</p>
-        <p>Models: CNN Baseline | MobileNetV2 | ResNet50</p>
-        <p><a href="https://github.com/maiamaiaa/car-vs-motorcycle" target="_blank">View on GitHub</a></p>
+        <p>📚 Project: Car vs Motorcycle Image Classification | 🎓 Deep Learning UTS Proyek</p>
+        <p>Nama: Eugenia Grasela Maia | NPM: 2355061008 | Universitas Lampung</p>
+        <p>Sandbox: CNN Baseline | MobileNetV2 | ResNet50</p>
         </div>
     """, unsafe_allow_html=True)
 
