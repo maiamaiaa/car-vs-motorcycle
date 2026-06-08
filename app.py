@@ -36,6 +36,27 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #FF5252;
     }
+    .success-box {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        color: #155724;
+    }
+    .error-box {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        color: #721c24;
+    }
+    .info-box {
+        background-color: #e2e3e5;
+        border: 1px solid #d6d8db;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        color: #383d41;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -68,34 +89,20 @@ def load_models():
         'ResNet50': 'resnet50_best_model.h5'
     }
     
-    Available_models = []
+    available_models = []
+    missing_models = []
     
     for model_name, model_path in model_paths.items():
         if os.path.exists(model_path):
             try:
                 models[model_name] = tf.keras.models.load_model(model_path)
-                Available_models.append(model_name)
+                available_models.append(model_name)
             except Exception as e:
-                st.warning(f"Could not load {model_name}: {str(e)}")
+                missing_models.append((model_name, str(e)))
         else:
-            st.warning(f"⚠️ Model file not found: {model_path}")
+            missing_models.append((model_name, "File not found"))
     
-    if not Available_models:
-        st.error(
-            """
-            ❌ No models found! 
-            
-            **Setup Instructions:**
-            1. Download the trained models from Kaggle notebook
-            2. Place `.h5` files in the same directory as this app:
-               - `cnn_baseline_best_model.h5`
-               - `mobilenetv2_best_model.h5`
-               - `resnet50_best_model.h5`
-            3. Restart the Streamlit app
-            """
-        )
-    
-    return models, Available_models
+    return models, available_models, missing_models
 
 # ============= MAIN APPLICATION =============
 def main():
@@ -104,11 +111,57 @@ def main():
     st.markdown("---")
     
     # Load models
-    models, available_models = load_models()
+    models, available_models, missing_models = load_models()
     
-    if not available_models:
-        st.error("Please follow the setup instructions in the sidebar.")
+    # Show setup status
+    if missing_models:
+        st.markdown("""
+        <div class="error-box">
+        <h3>⚠️ Setup Required</h3>
+        <p>Some model files are missing or unavailable.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if available_models:
+            st.success(f"✅ Available models: {', '.join(available_models)}")
+        
+        st.info("""
+        **To use this app locally:**
+        
+        1. Clone the repository:
+           ```bash
+           git clone https://github.com/maiamaiaa/car-vs-motorcycle.git
+           ```
+        
+        2. Download the trained models from the notebook:
+           - Run `car-vs-motorcycle.ipynb` to train models
+           - Models will be saved as `.h5` files
+        
+        3. Place model files in the project directory:
+           ```
+           cnn_baseline_best_model.h5
+           mobilenetv2_best_model.h5
+           resnet50_best_model.h5
+           ```
+        
+        4. Run the Streamlit app:
+           ```bash
+           streamlit run app.py
+           ```
+        
+        **Or deploy statically:**
+        
+        Upload your `.h5` files to GitHub Releases and configure the app to download them.
+        """)
+        
         return
+    
+    # All models available - show main interface
+    st.markdown("""
+    <div class="success-box">
+    <h3>✅ All Models Loaded Successfully!</h3>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Two-column layout
     col1, col2 = st.columns([1, 1])
@@ -198,6 +251,7 @@ def main():
         <div style='text-align: center; color: gray; font-size: 0.8rem;'>
         <p>📚 Project: Car vs Motorcycle Image Classification | 🎓 Deep Learning UAS</p>
         <p>Models: CNN Baseline | MobileNetV2 | ResNet50</p>
+        <p><a href="https://github.com/maiamaiaa/car-vs-motorcycle" target="_blank">View on GitHub</a></p>
         </div>
     """, unsafe_allow_html=True)
 
